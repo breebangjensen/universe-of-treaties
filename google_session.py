@@ -26,7 +26,7 @@ def connect_google(client_secret_file, api_name, api_version, *scopes):
             cred = pickle.load(token)
 
     if not cred or not cred.valid:
-        if cred and cred.espired and cred.refresh_token:
+        if cred and cred.expired and cred.refresh_token:
             cred.refresh(Request())
         else:
             flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRET_FILE, SCOPES)
