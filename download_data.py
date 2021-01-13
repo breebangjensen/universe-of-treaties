@@ -1,13 +1,10 @@
 # dowload google drive dataset
 # function to work with the google api 
+import os 
+import io
 from google_session import connect_google
+from googleapiclient.http import MediaIoBaseDownload
 import pandas as pd 
-
-this_file_path = os.path.abspath(__file__)
-
-project_root = os.path.split(this_file_path)[0]
-
-path_data = os.path.join(project_root, "data") + '/'
 
 # Create a client to interact with the Google Drive API
 CLIENT_SECRET_FILE = 'credentials.json'
@@ -36,4 +33,29 @@ while nextPageToken:
     files.extend(response.get('files'))
     nextPageToken = response.get('nextPageToken')
 
+# Create df of files in drive
+# I'm thinking this will be useful to get a list of all files we need 
 files_dir_view = pd.DataFrame(files)
+
+# downloads from the api require individual file IDs or we can specify file types 
+# etc. It's robust but we can streamline on Thursday.
+# test example
+file_ids = ['1oE2Ic7JffusJMZfuXDQu1UDATEQqUxBT']
+file_name = ['some.pdf']
+
+for file_id, file_name in zip(file_ids, file_name):
+    request = connection.files().get_media(fileId=file_id)
+
+    fh = io.BytesIO()
+    downloader = MediaIoBaseDownload(fd=fh, request=request)
+    done = False
+
+    while not done:
+        status, done = downloader.next_chunk()
+        print('Download Progress {0}'.format(status.progress()*100))
+
+    fh.seek(0)
+
+    with open(file_name, 'wb') as f: # we can specify directory here
+        f.write(fh.read())
+        f.close()
