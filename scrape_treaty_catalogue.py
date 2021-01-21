@@ -9,10 +9,11 @@
 #Use .csv file to find and open first URL. Tell program which column to find the URL in. 
 
 #go to URL and "read" data from table. 
+#find table on page 
 #listing for self, sections of the table we need
 #Registration Number, Title, Places/dates of conclusion, Subject terms, Agreement type, UNTS Volume Number, Publication format, Text document(s), Volume In PDF, Map(s), #Corrigendum/Addendum, Participant 
 
-# save output (will be csv)
+# save output (will be .csv)
 
 #close url?
 
