@@ -10,14 +10,15 @@
 
 #go to URL and "read" data from table. 
 #find table on page 
-#listing for self, sections of the table we need
+#listing for self, sections of the table we would like: 
 #Registration Number, Title, Places/dates of conclusion, Subject terms, Agreement type, UNTS Volume Number, Publication format, Text document(s), Volume In PDF, Map(s), #Corrigendum/Addendum, Participant 
+#Question: Is it an added challenge that "Participants" is in a subtable on the bottom? Can drop. 
 
 # save output (will be .csv)
 
 #close url?
 
-#loop process so as to cycle through each row in the .csv file.  Maybe the script for this should go at the beginning and not at the end (or both). 
+#loop process so as to cycle through each row in the .csv file.  Maybe the script for this should go at the beginning and not at the end (or needs to envelope the whole process). 
 
 #next steps
 #The output for this script will be used in a third script that will grab the text from all the text document URLS. 
