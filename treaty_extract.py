@@ -14,7 +14,9 @@ def convert_to_txt(pdf_file):
     with open (txt_file,'w', encoding="utf-8") as pdf_output:
         for page in range(pdf_reader.getNumPages()):
             data = pdf_reader.getPage(page).extractText()
-            pdf_output.write(data)
+            data_lines = data.splitlines()
+            data_string = ' '.join([str(elem) for elem in data_lines])
+            pdf_output.write(data_string)
     with open(txt_file, 'r') as pdf_content:
         pdf_content.read().replace('\n', ' ')
 
