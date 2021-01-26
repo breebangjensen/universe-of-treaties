@@ -53,4 +53,4 @@ time.time() - t
 t = time.time() 
 convert_to_txt_miner(file_path)
 time.time() - t
-# 18.38s!! Yikes! 
+# 18.38s!! Yikes!
