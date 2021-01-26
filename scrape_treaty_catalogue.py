@@ -14,7 +14,8 @@ import requests
 for i in range(1946:2019):  
             file_object("data/treaty_catalog_' + str(i) + '.csv'")
  #this is not an connected or functional loop 
-for URL in file_object
+for URL in href_column:
+            do_something(
 #Use .csv file to find and open first URL. Tell program which column to find the URL in. Column is called "href". 
             def open_page(url):
     r = requests.get(url)
@@ -36,7 +37,7 @@ for table in tables:
 csv_file_name = 'data/treaty_links'
 out_csv_file = open(csv_file_name, 'w', newline='')
 csv_writer = csv.writer(out_csv_file, delimiter=',')
-_ = csv_writer.writerow(column_names)
+_ = csv_writer.writerow(column_names))
 
 #close url? close csv? 
 out_csv_file.close()
