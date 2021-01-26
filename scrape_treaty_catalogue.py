@@ -1,6 +1,4 @@
-##next steps for self
-#1) add catalogue of scraped treaties to the top of the script
-#2) loop it
+
 
 #Objective of script
 #The goal of this script is to pick up where the script get_treaty_catalogue.py leaves off and to scrape through those treaty urls to harvest treaty specific metadata and the URLs
@@ -16,18 +14,14 @@ import requests
 for i in range(1946:2019):  
             file_object("data/treaty_catalog_' + str(i) + '.csv'")
  #this is not an connected or functional loop 
-
-#need to grab url from href
-   
-
-
+for URL in file_object
 #Use .csv file to find and open first URL. Tell program which column to find the URL in. Column is called "href". 
             def open_page(url):
     r = requests.get(url)
     return BeautifulSoup(r.text, 'html.parser')
 
 
-#scraping tables on url
+#scraping tables on url/extract data
 tables = soup.findAll("table")
 
 for table in tables:
@@ -44,7 +38,8 @@ out_csv_file = open(csv_file_name, 'w', newline='')
 csv_writer = csv.writer(out_csv_file, delimiter=',')
 _ = csv_writer.writerow(column_names)
 
-#close url?
+#close url? close csv? 
+out_csv_file.close()
 
 #loop process so as to cycle through each table  Maybe the script for this should go at the beginning and not at the end (or needs to envelope the whole process). 
 
