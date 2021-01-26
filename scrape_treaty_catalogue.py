@@ -1,3 +1,7 @@
+##next steps for self
+#1) add catalogue of scraped treaties to the top of the script
+#2) loop it
+
 #Objective of script
 #The goal of this script is to pick up where the script get_treaty_catalogue.py leaves off and to scrape through those treaty urls to harvest treaty specific metadata and the URLs
 #for each volume and for each treaty .txt or .pdf file.
@@ -11,13 +15,22 @@ import bs4
 file_object("data/treaty_catalog_' + str(search_year) + '.csv'", 
 
 #Use .csv file to find and open first URL. Tell program which column to find the URL in. Column is called "href". 
+            def open_page(url):
+    r = requests.get(url)
+    return BeautifulSoup(r.text, 'html.parser')
 
-#go to URL and "read" data from table. 
-#find table on page 
-#listing for self, sections of the table we would like: 
-#Registration Number, Title, Places/dates of conclusion, Subject terms, Agreement type, UNTS Volume Number, Publication format, Text document(s), Volume In PDF, Map(s), #Corrigendum/Addendum, Participant 
-#Question: Is it an added challenge that "Participants" is in a subtable on the bottom? Can drop. 
 
+#scraping tables on url
+tables = soup.findAll("table")
+
+for table in tables:
+        row_data = []
+        for row in table.find_all('tr'):
+            cols = row.find_all('td')
+            cols = [ele.text.strip() for ele in cols]
+            row_data.append(cols)
+        print(row_data)
+ 
 # save output (will be .csv). try to save one line of csv at a time so the data doesn't get lost if the job crashes. 
 csv_file_name = 'data/treaty_links'
 out_csv_file = open(csv_file_name, 'w', newline='')
