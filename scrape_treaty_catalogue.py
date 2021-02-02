@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 """
 Created on Thu Jan 28 15:25:02 2021
@@ -10,28 +9,39 @@ from bs4 import BeautifulSoup
 import requests
 import csv
 import pandas
-
+import time
+import os
+import glob
 
 ##read columns and file
 col_list = ["href", "title", "reg_num", "reg_date", "type", "con_date", "vol"]
 df = pandas.read_csv("treaty_catalog_1947.csv", usecols=col_list)
 urls=(df["href"])
 
+# Instantiate CSV
+# save output (will be .csv). try to save one line of csv at a time so the data doesn't get lost if the job crashes. 
+csv_file_name = 'treaty_links.csv'
+out_csv_file = open(csv_file_name, 'w', newline='')
+csv_writer = csv.writer(out_csv_file, delimiter=',')
+column_names=["reg_num", "title", "reg_year", "type_treaty", "pdf"]
+_ = csv_writer.writerow(column_names)
+# then write the column names into the csv
+
+#outer loop to go through the csv 
+# need step to check scraped files
+
+
+
+print('\nNamed with wildcard ranges:') 
+for name in glob.glob('/data/treaty_catalog_*[1946:2019].'): 
+    print (name)
+
+urls=(name["href"])     
+
 for url in urls: 
     r = requests.get(url)
     soup = BeautifulSoup(r.text, 'html.parser')
-##attempt to fix overwriting issue, does not fix
-    return _=csv_writer.writerow(row_to_write)
 
-
-# Instantiate CSV
-# save output (will be .csv). try to save one line of csv at a time so the data doesn't get lost if the job crashes. 
-    csv_file_name = 'treaty_links_2.csv'
-    out_csv_file = open(csv_file_name, 'w', newline='')
-    csv_writer = csv.writer(out_csv_file, delimiter=',')
-    column_names=["reg_num", "title", "reg_year", "type_treaty", "pdf"]
-    _ = csv_writer.writerow(column_names)
-# then write the column names into the csv
 
 # Scrape valuable data
 ## registration number (appears as <span id="lblRegNum1">20</span>)
@@ -54,7 +64,9 @@ for url in urls:
 
     row_to_write = [reg, title, reg_year, type_treaty, pdf]
 
+    _=csv_writer.writerow(row_to_write)
    
+    time.sleep(2)
 
 
 
