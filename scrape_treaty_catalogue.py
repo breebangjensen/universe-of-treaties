@@ -1,9 +1,10 @@
 #import csv
-import pandas
+import pandas as pd
 import time
 import os
 import glob
-
+import csv
+import requests
 
 
 # Instantiate CSV
@@ -18,16 +19,24 @@ _ = csv_writer.writerow(column_names)
 #outer loop to go through the csv 
 # need step to check scraped files
 
+print('\nNamed with wildcard ranges:') 
 
+# glob.glob returns a list of the matched files see it here 
+glob.glob('data/treaty_catalog_[1946:2019]*.csv')
 
 
 for name in glob.glob('/data/treaty_catalog_*[1946:2019]*.csv'): 
-    print (name)
+    print (name) # print the first one
 
 ##read columns and file
-col_list = ["href", "title", "reg_num", "reg_date", "type", "con_date", "vol"]
-df = pandas.read_csv(name,  usecols=col_list)
-urls=(df["href"])
+# let's assume that you are inside the glob loop for now and the first file needs to be open 
+name = 'data/treaty_catalog_1947.csv'
+df = pd.read_csv(name)
+
+urls=(df["href"].to_list())
+# so now your loop should start here with the urls let's try the first one
+urls = urls[0] # this will pass only one entry, get rid of this line when you're ready for the full list
+# This is the inner loop 
 for url in urls: 
     r = requests.get(url)
     soup = BeautifulSoup(r.text, 'html.parser')
