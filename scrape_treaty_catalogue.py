@@ -1,22 +1,10 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Jan 28 15:25:02 2021
-
-@author: Bree
-"""
-##
-from bs4 import BeautifulSoup
-import requests
-import csv
+#import csv
 import pandas
 import time
 import os
 import glob
 
-##read columns and file
-col_list = ["href", "title", "reg_num", "reg_date", "type", "con_date", "vol"]
-df = pandas.read_csv("treaty_catalog_1947.csv", usecols=col_list)
-urls=(df["href"])
+
 
 # Instantiate CSV
 # save output (will be .csv). try to save one line of csv at a time so the data doesn't get lost if the job crashes. 
@@ -32,12 +20,14 @@ _ = csv_writer.writerow(column_names)
 
 
 
-print('\nNamed with wildcard ranges:') 
-for name in glob.glob('/data/treaty_catalog_*[1946:2019].'): 
+
+for name in glob.glob('/data/treaty_catalog_*[1946:2019]*.csv'): 
     print (name)
 
-urls=(name["href"])     
-
+##read columns and file
+col_list = ["href", "title", "reg_num", "reg_date", "type", "con_date", "vol"]
+df = pandas.read_csv(name,  usecols=col_list)
+urls=(df["href"])
 for url in urls: 
     r = requests.get(url)
     soup = BeautifulSoup(r.text, 'html.parser')
