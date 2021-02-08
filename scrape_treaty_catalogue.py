@@ -6,6 +6,7 @@ import os
 import glob
 import csv
 import requests
+from urllib.parse import urlparse
 
 
 # Instantiate CSV
@@ -17,8 +18,6 @@ column_names=["reg_num", "title", "reg_year", "type_treaty", "pdf"]
 _ = csv_writer.writerow(column_names)
 # then write the column names into the csv
 
-##create file dictionary
-file_dictionary={}
 
 #outer loop to go through the csv 
 # need step to check scraped files
@@ -30,27 +29,25 @@ glob.glob('data/treaty_catalog_[1946:2019]*.csv')
 
 
 for name in glob.glob('/data/treaty_catalog_*[1946:2019]*.csv'): 
-    print (name) # print the first one
-    #check if name in dictionary
-    if name in file_dictionary:
-        print("yes")
-    else:
-        df = pd.read_csv(name)
-    ##append name to dictionary 
-        file_dictionary={name}
-
 ##read columns and file
 # let's assume that you are inside the glob loop for now and the first file needs to be open 
 #some redundancy with the above to clean up 
         df = pd.read_csv(name)
-    name = 'data/treaty_catalog_1947.csv'
+  
+   
+urls=(df["href"].to_list())
    
 
-    urls=(df["href"].to_list())
-# so now your loop should start here with the urls let's try the first one
-    urls = urls[0] # this will pass only one entry, get rid of this line when you're ready for the full list
-# This is the inner loop 
-for url in urls: 
+# set up for tracking urls scraped
+url_example = 'https://treaties.un.org/Pages/showDetails.aspx?objid=0800000280164909&clang=_en'
+# url parser
+test = urlparse(url_example).path
+os.path.basename(urlparse(url_example).path)
+
+##get pdfs
+for url in urls:
+  pdf_from_link = os.path.basename(urlparse(url).path)
+  if pdf_from_link is not in pdf_files:
     r = requests.get(url)
     soup = BeautifulSoup(r.text, 'html.parser')
 
