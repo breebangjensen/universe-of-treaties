@@ -1,0 +1,94 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Feb  9 09:40:25 2021
+
+@author: Bree
+"""
+
+#import packages
+import pandas as pd
+import csv
+import os
+import PyPdf2
+import re 
+
+
+#Objective: Merge a dataframe consisting of the text of the human labeled
+#treaties with the labels for experimentation. 
+
+#3set up
+file_content = []
+count = 0
+filename_previous = '' #placeholder
+
+
+ 
+#read in data
+for file in os.listdir(path):
+    try:
+        filename, file_extension = file.split('.')
+ #ignore duplicate files
+        if (filename_previous == filename) or (('(1)' or '(2)') in filename):
+             continue
+#get txt formats
+        if file_extension == 'pdf':
+            pdfFileObj = open (path + '\\' + file, 'rb')
+            pdfReader = PyPDF2.PdfFileReader(pdfFileObj, strict=False) 
+            pdf_texts = []
+            for page in range(0, pdfReader.numPages):
+                pageObj = pdfReader.getPage(page) 
+                pdf_texts.append(pageObj.extractText())
+                pdfFileObj.close()
+                file_content.append([filename, pdf_texts])
+                filename_previous = filename
+                count+=1
+                continue
+ #ignore .docx or .doc files
+        if file_extension != 'txt':
+            continue
+        else:
+            f = open(path + '\\' + file, 'r', encoding='utf8')
+            file_content.append([os.path.splitext(file)[0], f.read()])
+            filename_previous = filename
+            count+=1
+            if count == 30:
+                break
+    except Exception:
+                print("An Error Was Found")
+                continue
+    
+# #Putting the data above into a csv file called dataset.csv
+col_names = ['treaty_number', 'content']
+with open('dataset.csv', 'w', newline='', encoding='utf8',) as csv_file:
+    writer = csv.writer(csv_file)
+    writer.writerow(col_names)
+    for i in file_content:
+        writer.writerow(i)
+        csv_file.close()
+
+
+#merge with  labels
+#load labels
+treaty_tags= pd.read_csv("treaty_tags.csv")
+
+##load created csv (possibly not necessary?)
+labeled_treaties= pd.read_csv("labeled_treaties.csv")
+
+
+#merge
+data={"labeled_treaties", "treaty_tags"}
+df = pd.DataFrame(data)
+test = [0] * df.shape[0]
+
+for i, r in enumerate(zip(df['labeled_treaties'], df['treaty_tags'])):
+    if r[0] is not r[1]:
+        nums = re.findall(r'\b\d{5}\b', r[0])
+        test[i] = nums[0]
+    else:
+        test[i] = r[0]
+
+print(test)
+
+# we will have to build in a check as well something like 
+ # this is your column with only numeric and you will compare to the extracted list from the bad one
+test == df['treaty)tags'].to_list()
