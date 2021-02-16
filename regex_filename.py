@@ -49,7 +49,7 @@ df['check'] = df.df2.isin(df.df1)
 
 test = [0] * df.shape[0]
 
-for i, r in enumerate(zip(df['df1'], df['df2'])):
+for i, r in enumerate(zip(df['df1'], df['df2'])): # these have to be the same length if using two dfs
     if r[0] is not r[1]:
         nums = re.findall(r'\b\d{5}\b', r[0])
         test[i] = nums[0]
@@ -62,4 +62,5 @@ print(test)
  # this is your column with only numeric and you will compare to the extracted list from the bad one
 test == df['df2'].to_list()
 
+df['new_column_ID'] =  # Use regex extraction here within the df that you want to extract IDs from then do a left join
     
