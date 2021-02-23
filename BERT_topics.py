@@ -17,7 +17,9 @@ import json
 
 # Load pretrained model
 # this is the glove model (slighty smaller, but we can try others)
-gl_embed = gensim_api.load("glove-wiki-gigaword-300") # create function to load pickle or download 
+wiki_embed = gensim_api.load("glove-wiki-gigaword-300") # create function to load pickle or download 
+google_embed = gensim_api.load("word2vec-google-news-300")
+# FOR A LIST OF MODELS AVAILABLE THROUGH THE API: https://radimrehurek.com/gensim/models/word2vec.html
 
 # Load your data we might start with one doc to test
 data = pd.read_csv('data/final_labels.csv', error_bad_lines=False);
@@ -26,10 +28,9 @@ data_text = data['content'].astype(str) # convert to string
 data_text['index'] = data_text.index
 documents = data_text.to_list()
 
-test_doc = documents[3] # lets beggin with n=1
+test_doc = documents[3] # lets begin with n=1
 
 # Clean up documents THIS STILL NEEDS TO HAPPEN SO WILL USE EXCERPT
-
 
 test_doc = """
 Declaring their intention to achieve at the earliest possible date the cessation of the nuclear arms race and to undertake effective measures in the direction of nuclear disarmament, Urging the co-operation of all States in the attainment of this objective,
@@ -55,7 +56,6 @@ text = text.lower()
 
 # remove stop words
 text = remove_stopwords(text)
-
 
 # Load keywords json
 # use this function 
@@ -96,20 +96,30 @@ def get_similar_words(list_words, top, wb_model):
         list_out.append(w[0])
     return list(set(list_out))
 
-dict_codes = {key: None for key in cat_keyw.keys()}
+## DIF IN GOOGLE VS GLOVE not surprised. 
+## We might not use these to create keywords
+## We can try with the topic model results --> TF-IDF and Topics
+dict_codes_google = {key: None for key in cat_keyw.keys()}
 
 # This creates a dictionary of words using your predefined keywords from the model
 # uses 30 words but you can add more 
 # This step is also not necessary if you have many keywords
 for k in cat_keyw.keys():
-    dict_codes[k] = get_similar_words(cat_keyw[k],30, gl_embed)
+    dict_codes_google[k] = get_similar_words(cat_keyw[k],10, gl_embed)
+###########
+#GLOVE
+dict_codes_glove = {key: None for key in cat_keyw.keys()}
 
+# This creates a dictionary of words using your predefined keywords from the model
+# uses 30 words but you can add more 
+# This step is also not necessary if you have many keywords
+for k in cat_keyw.keys():
+    dict_codes_glove[k] = get_similar_words(cat_keyw[k],10, wiki_embed)
+###
 
-dict_y = {k:utils_bert_embedding(v, tokenizer, m_bert).mean(0) for k,v in dict_codes.items()}
+dict_y = {k:utils_bert_embedding(v, tokenizer, m_bert).mean(0) for k,v in cat_keyw.items()}
 
 # Create model when we need to iterate over multiple documents 
-# one set back, BERT caps out at 512 vocab words we might have to explore alternatives
-
 similarities = np.array([metrics.pairwise.cosine_similarity(X,[y]).T.tolist()[0] for y in dict_y.values()]).T
 
 # using one case 
