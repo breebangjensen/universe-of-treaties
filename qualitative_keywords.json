@@ -25,7 +25,9 @@
     "kilogram", 
     "ton", 
     "kilometer", 
-    "meter"],
+    "meter",
+    "tonnes",
+    "define"],
 "OBLIGATION": [
     "dispute", 
     "arbitration", 
@@ -94,5 +96,7 @@
     "expiry", 
     "terminate", 
     "termination", 
-    "withdrawal"]
+    "withdrawal",
+    "denounce",
+    "denouncing"]
 }
