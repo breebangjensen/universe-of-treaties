@@ -29,25 +29,25 @@ data_text['index'] = data_text.index
 bad_characters = list("?!~﻿\/_-'[]»")
 
 for punctuation in bad_characters:
-    data['content']  = data['content'].str.replace(punctuation, "")
+    data_text  = data_text.str.replace(punctuation, "")
 
 #get rid of multiple periods without getting rid of single periods helpful for 
 #denoting sentences
-data['content']= data['content'].str.replace(r"\.{2,}", "")
+data_text= data_text.str.replace(r"\.{2,}", "")
 
 #Do we need to get rid of things like (a) as a list tool?
-data['content']= data['content'].str.replace(r"\(\w\)", "")
+data_text= data_text.str.replace(r"\(\w\)", "")
 
 #Getting rid of extra whitespace
-data['content']= data['content'].str.replace(r" +", " ")
+data_text= data_text.str.replace(r" +", " ")
 
 # you need to convert to lower case 
-data['content'] = data['content'].str.lower() 
+data_text = data_text.str.lower() 
 
-data['content'] = data['content'].str.replace(r"\d+", "")
+data_text = data_text.str.replace(r"\d+", "")
 
 # isolate the documents convert to list 
-clean_documents  = data['content'].to_list()
+clean_documents  = data_text.to_list()
 
 # remove empty entries for now, are they supposed to be missing? 
 clean_documents = [i for i in clean_documents if i] 
