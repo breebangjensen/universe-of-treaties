@@ -52,6 +52,11 @@ clean_documents  = data['content'].to_list()
 # remove empty entries for now, are they supposed to be missing? 
 clean_documents = [i for i in clean_documents if i] 
 
+# remove stop words
+doc_stop_rm = [0]* len(clean_documents)
+for i, d, in enumerate(clean_documents):
+    doc_stop_rm[i] = remove_stopwords(d)
+
 # clean documents is our ffeature matrix here, we will explore what signals our words can 
 # contribute, we still need to create our outcome list that corresponds to each text
 # we can explore the features without the outcome for now
@@ -78,7 +83,7 @@ model_feat = Pipeline([('vect', CountVectorizer(ngram_range=(1, 2), analyzer='wo
 # X_matrix is the tf-idf feature matrix, very sparse
 # vec = vectorizer, we can pull thigs out of this like the vocab dictionary of corpus
 # features = # you can inspect this its all the features in you potential model
-X_matrix = model_feat.fit_transform(clean_documents)
+X_matrix = model_feat.fit_transform(doc_stop_rm)
 vec = model_feat.named_steps['vect']
 features = vec.get_feature_names() 
 
