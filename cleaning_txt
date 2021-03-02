@@ -1,0 +1,27 @@
+##packages
+import pandas as pd
+import regex as r
+
+
+##load data
+data = pd.read_csv('final_labels.csv', error_bad_lines=False)
+
+
+#cleaning data
+#probably a way to string this together better
+##get rid of special characters and "accidental" punctuation
+bad_characters = list("?!~﻿\/_-'[]»")
+
+for punctuation in bad_characters:
+    data['content']  = data['content'].str.replace(punctuation, "")
+
+#get rid of multiple periods without getting rid of single periods helpful for 
+#denoting sentences
+
+data['content']= data['content'].re.sub(r, "\.{2,}", "")
+
+#Do we need to get rid of things like (a) as a list tool?
+data['content']== data['content'].re.sub(r, "\(\w\)", "")
+
+#Getting rid of extra whitespace
+data['content']== data['content'].re.sub(r, " +", " ")
