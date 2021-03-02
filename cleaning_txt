@@ -6,7 +6,7 @@ import regex as r
 ##load data
 data = pd.read_csv('final_labels.csv', error_bad_lines=False)
 data['content'].dtypes # check data type 
-data = data['content'].astype(str)
+data['content'] = data['content'].astype(str)
 
 
 #cleaning data
