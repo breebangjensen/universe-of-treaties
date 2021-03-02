@@ -118,3 +118,5 @@ def corpus_top_mean_feats(X, features, grp_ids=None, min_tfidf=0.1, top_n=25):
 corpus_top_mean_feats(X=X_matrix, features=features, grp_ids=None, min_tfidf=0.1, top_n=25)
 
 # can def trim out some of these words to start getting better signals 
+
+# after this we can now begin modeling! 
