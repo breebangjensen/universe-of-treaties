@@ -5,6 +5,8 @@ import regex as r
 
 ##load data
 data = pd.read_csv('final_labels.csv', error_bad_lines=False)
+data['content'].dtypes # check data type 
+data = data['content'].astype(str)
 
 
 #cleaning data
@@ -18,10 +20,10 @@ for punctuation in bad_characters:
 #get rid of multiple periods without getting rid of single periods helpful for 
 #denoting sentences
 
-data['content']= data['content'].re.sub(r, "\.{2,}", "")
+data['content']= data['content'].str.replace(r, "\.{2,}", "")
 
 #Do we need to get rid of things like (a) as a list tool?
-data['content']== data['content'].re.sub(r, "\(\w\)", "")
+data['content']== data['content'].str.replace(r, "\(\w\)", "")
 
 #Getting rid of extra whitespace
-data['content']== data['content'].re.sub(r, " +", " ")
+data['content']== data['content'].str.replace(r, " +", " ")
