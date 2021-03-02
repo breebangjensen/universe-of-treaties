@@ -45,6 +45,8 @@ data_text= data_text.str.replace("\(\w\)", "")
 #Getting rid of extra whitespace
 data_text= data_text.str.replace(" +", " ")
 
+#Getting rid of numbers
+data_text= data_text.str.replace("[0=9", "")
 
 
 # some useful function for text preprocessing 
