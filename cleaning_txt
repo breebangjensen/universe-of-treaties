@@ -1,29 +1,65 @@
 ##packages
 import pandas as pd
 import regex as r
+import re
+import re import nltk
+nltk.download('words')
+words = set(nltk.corpus.words.words())
 
 
 ##load data
 data = pd.read_csv('final_labels.csv', error_bad_lines=False)
 data['content'].dtypes # check data type 
-data['content'] = data['content'].astype(str)
+data_text = data['content'].astype(str)
 
 
 #cleaning data
+
+##get rid of non-english text
+data_text = re.findall('[A-Z][^A-Z]*', data_text)
+data_text = ' '.join(data_text)
+data_text = " ".join(w for w in nltk.wordpunct_tokenize(data_text) if w.lower() in words or not w.isalpha())
+
+#get rid of stopwords
+stop_words = list(stopwords.words('english'))
+
+for stop_word in stop_words:
+    regex_stopword = r"\b" + stop_word + r"\b"
+    data_text = data_text.str.replace(regex_stopword, '')
+
 #probably a way to string this together better
 ##get rid of special characters and "accidental" punctuation
 bad_characters = list("?!~﻿\/_-'[]»")
 
 for punctuation in bad_characters:
-    data['content']  = data['content'].str.replace(punctuation, "")
+    data_text  = data_text.str.replace(punctuation, "")
 
 #get rid of multiple periods without getting rid of single periods helpful for 
 #denoting sentences
 
-data['content']= data['content'].str.replace(r, "\.{2,}", "")
+data_text= data_text.str.replace("\.{2,}", "")
 
 #Do we need to get rid of things like (a) as a list tool?
-data['content']== data['content'].str.replace(r, "\(\w\)", "")
+data_text= data_text.str.replace("\(\w\)", "")
 
 #Getting rid of extra whitespace
-data['content']== data['content'].str.replace(r, " +", " ")
+data_text= data_text.str.replace(" +", " ")
+
+
+
+# some useful function for text preprocessing 
+
+from sklearn.feature_extraction.text import CountVectorizer
+
+def get_top_n_courses(corpus, n=None):
+    """
+    List the top n words in a vocabulary according to occurrence in a text corpus.
+    """
+    vec = CountVectorizer().fit(corpus)
+    bag_of_words = vec.transform(corpus)
+    sum_words = bag_of_words.sum(axis=0) 
+    words_freq = [(word, sum_words[0, idx]) for word, idx in vec.vocabulary_.items()]
+    words_freq = sorted(words_freq, key = lambda x: x[1], reverse=True)
+    return words_freq[:n] 
+
+get_top_n_courses(data_text, n=20)
