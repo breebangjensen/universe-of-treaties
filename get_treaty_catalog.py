@@ -12,13 +12,12 @@ Example:
 This is adapted from https://github.com/zhiyzuo/UNTC-scraper.  Thanks, @zhiyzuo.
 
 TODOs:
-    * Run with headless chrome for nohuping in a terminal
-    * Automate loop over years and months
-      (which involves reloading search page or resetting search criteria)
     * Outputs have duplicated rows.  Why?
 """
 
+import os
 import time
+import calendar
 import csv
 import numpy as np
 import pandas as pd
@@ -32,7 +31,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 
-
+# Functions
 def parse_page(tr_list):
     """Parse search result tables"""
     tmp = list()
@@ -45,102 +44,123 @@ def parse_page(tr_list):
     return tmp
     # return pd.DataFrame(tmp, columns=column_names)
 
-
-# Start and stop search dates in DD/MM/YYYY(!)
-search_year = 1947
-from_date = '01/01/' + str(search_year)
-to_date = '31/12/' + str(search_year)
-print('Searching for all treaties registered in ' + str(search_year) + '...')
-
-# Search criteria
-base_url = 'https://treaties.un.org'
-column_names = ['href', 'title', 'reg_num', 'reg_date', 'type', 'con_date', 'vol']
-tid = 'ctl00_ctl00_ContentPlaceHolder1_ContentPlaceHolderInnerPage_dgTreaty'
-url = 'https://treaties.un.org/Pages/AdvanceSearch.aspx?tab=UNTS&clang=_en'
+def month_year_iter(start_month, start_year, end_month, end_year):
+    """Generator function to return year-month iter
+    from https://stackoverflow.com/questions/5734438/how-to-create-a-month-iterator
+    """
+    ym_start= 12 * start_year + start_month - 1
+    ym_end= 12 * end_year + end_month - 1
+    for ym in range(ym_start, ym_end):
+        y, m = divmod(ym, 12)
+        yield y, m+1
 
 
-# Open browser
-browser = webdriver.Chrome()
-browser.get(url)
-time.sleep(2)
 
-# Select Treaty filter
-select = Select(browser.find_element_by_name('ctl00$ctl00$ContentPlaceHolder1$ContentPlaceHolderInnerPage$drpSearchObj'))
-select.select_by_visible_text('Treaty')
-time.sleep(np.random.randint(5,6))
+# Scrape every month in a range of dates
+for y,m in month_year_iter(1, 1998, 12, 2000):
+    num_days = calendar.monthrange(y, m)[1]
+    from_date = '01/' + str(m).zfill(2) + '/' + str(y)
+    to_date = str(num_days) + '/' + str(m).zfill(2) + '/' + str(y)
+    print('Searching for all treaties registered in ' + from_date + ' to ' + to_date + '...')
 
-## Select Show Only Original Agreements
-browser.find_element_by_id('ctl00_ctl00_ContentPlaceHolder1_ContentPlaceHolderInnerPage_rdbtreaty_2').send_keys(Keys.SPACE)
-select = Select(browser.find_element_by_name('ctl00$ctl00$ContentPlaceHolder1$ContentPlaceHolderInnerPage$drpAttribute'))
-time.sleep(np.random.randint(5,6))
-#time.sleep(np.random.randint(10, 15))
+    # Only scrape if it doesn't already exist
+    date_range = from_date[6:10] + '-' + from_date[3:5]
+    # date_range = from_date[6:10] + from_date[3:5] + from_date[0:2] + '-' + to_date[6:10] + to_date[3:5] + to_date[0:2]
+    csv_file_name = 'treaty_catalog_' + date_range + '.csv'
+    if csv_file_name in os.listdir('data'):
+        print('Skipping %s is already scraped.'%(csv_file_name))
+        continue
 
-## Select Date of Registration filter
-select = Select(browser.find_element_by_name('ctl00$ctl00$ContentPlaceHolder1$ContentPlaceHolderInnerPage$drpAttribute'))
-time.sleep(np.random.randint(5,6))
-select.select_by_visible_text('Date of Registration')
+    # Search criteria
+    base_url = 'https://treaties.un.org'
+    column_names = ['href', 'title', 'reg_num', 'reg_date', 'type', 'con_date', 'vol']
+    tid = 'ctl00_ctl00_ContentPlaceHolder1_ContentPlaceHolderInnerPage_dgTreaty'
+    url = 'https://treaties.un.org/Pages/AdvanceSearch.aspx?tab=UNTS&clang=_en'
 
-# Select Date Range filter
-# to date first, then from date.  order is important.
-to_field = browser.find_element_by_name('ctl00$ctl00$ContentPlaceHolder1$ContentPlaceHolderInnerPage$txtTo')
-time.sleep(2)
-to_field.click()
-time.sleep(2)
-to_field.clear()
-time.sleep(2)
-to_field.send_keys(to_date)
-from_field = browser.find_element_by_name('ctl00$ctl00$ContentPlaceHolder1$ContentPlaceHolderInnerPage$txtFrom')
-from_field.click()
-time.sleep(2)
-from_field.clear()
-time.sleep(2)
-from_field.send_keys(from_date)
-time.sleep(2)
-# then add the query to the search criteria
-browser.find_element_by_name('ctl00$ctl00$ContentPlaceHolder1$ContentPlaceHolderInnerPage$btnAdd').send_keys(Keys.SPACE)
-time.sleep(2)
+    # Open browser
+    chrome_options = webdriver.ChromeOptions()
+    # chrome_options.add_argument("--headless")
+    browser = webdriver.Chrome(options=chrome_options)
+    browser.get(url)
+    time.sleep(2)
 
-# Do the Search
-browser.find_element_by_name('ctl00$ctl00$ContentPlaceHolder1$ContentPlaceHolderInnerPage$btnSubmit').send_keys(Keys.SPACE)
+    # Select Treaty filter
+    select = Select(browser.find_element_by_name('ctl00$ctl00$ContentPlaceHolder1$ContentPlaceHolderInnerPage$drpSearchObj'))
+    select.select_by_visible_text('Treaty')
+    time.sleep(np.random.randint(4,8))
 
+    ## Select Show Only Original Agreements
+    browser.find_element_by_id('ctl00_ctl00_ContentPlaceHolder1_ContentPlaceHolderInnerPage_rdbtreaty_2').send_keys(Keys.SPACE)
+    select = Select(browser.find_element_by_name('ctl00$ctl00$ContentPlaceHolder1$ContentPlaceHolderInnerPage$drpAttribute'))
+    time.sleep(np.random.randint(4,8))
+    #time.sleep(np.random.randint(10, 15))
 
-# QAQC
-record_count_elem = browser.find_element_by_id('ctl00_ctl00_ContentPlaceHolder1_ContentPlaceHolderInnerPage_lblMsg').text
-record_count = record_count_elem.split(':')[1].strip()
-print('This query returned ' + record_count + ' treaties.')
-if int(record_count) > 500:
-    raise ValueError('Search results are capped at 500 records.  Try smaller date range.')
+    ## Select Date of Registration filter
+    select = Select(browser.find_element_by_name('ctl00$ctl00$ContentPlaceHolder1$ContentPlaceHolderInnerPage$drpAttribute'))
+    time.sleep(np.random.randint(4,8))
+    select.select_by_visible_text('Date of Registration')
 
-# Iterate and save data
-csv_file_name = 'data/treaty_catalog_' + str(search_year) + '.csv'
-out_csv_file = open(csv_file_name, 'w', newline='')
-csv_writer = csv.writer(out_csv_file, delimiter=',')
-_ = csv_writer.writerow(column_names)
+    # Select Date Range filter
+    # to date first, then from date.  order is important.
+    to_field = browser.find_element_by_name('ctl00$ctl00$ContentPlaceHolder1$ContentPlaceHolderInnerPage$txtTo')
+    time.sleep(2)
+    to_field.click()
+    time.sleep(2)
+    to_field.clear()
+    time.sleep(2)
+    to_field.send_keys(to_date)
+    from_field = browser.find_element_by_name('ctl00$ctl00$ContentPlaceHolder1$ContentPlaceHolderInnerPage$txtFrom')
+    from_field.click()
+    time.sleep(2)
+    from_field.clear()
+    time.sleep(2)
+    from_field.send_keys(from_date)
+    time.sleep(2)
+    # then add the query to the search criteria
+    browser.find_element_by_name('ctl00$ctl00$ContentPlaceHolder1$ContentPlaceHolderInnerPage$btnAdd').send_keys(Keys.SPACE)
+    time.sleep(2)
 
-i = 1
-while True:
-    tbody = browser.find_element_by_id(tid).find_element_by_tag_name('tbody')
-    tr_list = tbody.find_elements_by_tag_name('tr')
-    d = len(tr_list[1].find_elements_by_tag_name('td'))
-    if d < 10:
-        s = '0%d'%d
-    else:
-        s = str(d)
-    id_ = 'ctl00$ctl00$ContentPlaceHolder1$ContentPlaceHolderInnerPage$dgTreaty$ctl01$ctl%s'%(s)
-    btn = WebDriverWait(browser,
-                        np.random.randint(5,7)).until(EC.presence_of_element_located((By.NAME, id_)))
-    for csv_row in parse_page(tr_list[3:-2]):
-        _ = csv_writer.writerow(csv_row)
-    print('Parsing page %d of approx %d pages from %d...'%(i, int(record_count)/10, str(search_year)))
-    if btn.get_attribute('disabled') is not None:
-        break
-    btn.click()
-    i += 1
-    time.sleep(np.random.randint(5, 12)+2)
+    # Do the Search
+    browser.find_element_by_name('ctl00$ctl00$ContentPlaceHolder1$ContentPlaceHolderInnerPage$btnSubmit').send_keys(Keys.SPACE)
+    time.sleep(8)
 
-# Close connections
-out_csv_file.close()
-browser.close()
+    # QAQC
+    record_count_elem = browser.find_element_by_id('ctl00_ctl00_ContentPlaceHolder1_ContentPlaceHolderInnerPage_lblMsg').text
+    record_count = record_count_elem.split(':')[1].strip()
+    print('This query returned ' + record_count + ' treaties.')
+    if int(record_count) > 500:
+        raise ValueError('Search results are capped at 500 records.  Try smaller date range.')
+
+    # Iterate and save data
+    csv_file_path = 'data/' + csv_file_name
+    out_csv_file = open(csv_file_path, 'w', newline='')
+    csv_writer = csv.writer(out_csv_file, delimiter=',')
+    _ = csv_writer.writerow(column_names)
+
+    i = 1
+    while True:
+        tbody = browser.find_element_by_id(tid).find_element_by_tag_name('tbody')
+        tr_list = tbody.find_elements_by_tag_name('tr')
+        d = len(tr_list[1].find_elements_by_tag_name('td'))
+        if d < 10:
+            s = '0%d'%d
+        else:
+            s = str(d)
+        id_ = 'ctl00$ctl00$ContentPlaceHolder1$ContentPlaceHolderInnerPage$dgTreaty$ctl01$ctl%s'%(s)
+        btn = WebDriverWait(browser,
+                            np.random.randint(5,7)).until(EC.presence_of_element_located((By.NAME, id_)))
+        for csv_row in parse_page(tr_list[3:-2]):
+            _ = csv_writer.writerow(csv_row)
+        print('Parsing page %d of approx %d pages from %s...'%(i, int(record_count)/10, date_range))
+        if btn.get_attribute('disabled') is not None:
+            break
+        btn.click()
+        i += 1
+        time.sleep(np.random.randint(7, 14))
+
+    # Close connections
+    out_csv_file.close()
+    browser.close()
 
 
 
