@@ -18,10 +18,42 @@ from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 # Load your data we might start with one doc to test
-data = pd.read_csv('data/final_labels.csv', error_bad_lines=False);
+data = pd.read_csv('data/final_labels.csv', error_bad_lines=False) # WIP: Bree created new data 
 data['content'].dtypes # check data type 
-data_text = data['content'].astype(str) # convert to string 
-data_text['index'] = data_text.index
+data['content'] = data['content'].astype(str) # convert to string 
+data.columns
+
+# create outcome
+# y = [precision_high, obligation_high, delegation_high]
+# We have a scale to work with here:
+# PRECISION: 
+# Mutations to make:
+# 1. 'precision 1 (Y/N)' is 'Y' or 'N' we need to convert to (0,1)
+# 2. 'precision 2 (1-4)' 
+# 3. 'precision 4 (Y/N)' convert to (0,1)
+# 'precision_high = sum of all the precision measure >= 3
+# OBLIGATION:
+# Mutations to make
+# 1. 'obligation 1 (Y/N)' we need to convert to (0,1)
+# 2. 'obligation 2 (Y/N)' we need to convert to (0,1)
+# 3. 'obligation 3 (Y/N)' we need t0 convert to (0,1)
+# 'obligation_high = sum of all the obligation measure >= 3
+# DELEGATION:
+# Mutations to make
+# 1. 'delegation 1 (Y/N)' we need to convert to (0,1)
+# 2. 'delegation 2 (Y/N)' we need to convert to (0,1)
+# 3. 'delegation 3 (Y/N)' we need t0 convert to (0,1)
+# 'delegation_high = sum of all the delegation measure >= 3
+
+# isolate labels
+precision = ['precision 1 (Y/N)', 'precision 4 (Y/N)']
+obligation = ['obligation 1 (Y/N)', 'obligation 2 (Y/N)', 'obligation 3 (Y/N)', 'obligation 5 (Y/N)']
+delegation = ['delegation 1 (Y/N)', 'delegation 2 (Y/N)', 'delegation 3 (Y/N)']
+
+# create dummies and concat back to main df
+precision_dummies = pd.get_dummies(data[delegation])
+
+# create Precision dummies
 
 #cleaning data
 #probably a way to string this together better
@@ -125,3 +157,7 @@ corpus_top_mean_feats(X=X_matrix, features=features, grp_ids=None, min_tfidf=0.1
 # can def trim out some of these words to start getting better signals 
 
 # after this we can now begin modeling! 
+# Create the y outcome 
+# precision, obligation, delegation [high or low][0,1]
+# 1 decision with more cats (all 3) 
+# This document has more indicators for precision versus some other things  
