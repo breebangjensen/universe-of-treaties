@@ -283,7 +283,7 @@ x
 # split train and test (WIP until we have all the possible text)
 x_train, x_test, y_train, y_test = train_test_split(doc_stop_rm, df_outcomes, test_size=0.2, random_state=40)
 
-# we can use our existing tfidf pipeline but incorporate out classifiers 
+# we can use our existing tfidf pipeline but incorporate our classifiers 
 model_feat = Pipeline([('vect', CountVectorizer(ngram_range=(1, 2), analyzer='word')),
     ('tfidf', TfidfTransformer(use_idf= True))
     ])
@@ -330,4 +330,4 @@ for category in cats:
 # SVC seems to be doing the best.
 # Next steps:
 # 1. Parameter tuning 
-# 2. Inspect classifications 
+# 2. Inspect classifications (this will be tricky for the multi label case) 
