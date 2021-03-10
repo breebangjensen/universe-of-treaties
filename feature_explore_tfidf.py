@@ -16,7 +16,14 @@ from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.model_selection import train_test_split
 
+from sklearn.multiclass import OneVsRestClassifier
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import LinearSVC
+
+from sklearn.metrics import accuracy_score
 # Load your data we might start with one doc to test
 data = pd.read_csv('data/final_labels.csv', error_bad_lines=False) # WIP: Bree created new data 
 data['content'].dtypes # check data type 
@@ -133,35 +140,46 @@ data['precision_high'] = np.where(data['precision_sum'] >= 3, 1, 0)
 data['obligation_high'] = np.where(data['obligation_sum'] >= 3, 1, 0)
 data['delegation_high'] = np.where(data['delegation_sum'] >= 3, 1, 0)
 
-# only keep complete cases we can use any of the sum_na columns for this [WIP: GET THE DOCS AND Y AND THEN DO COMPLETE CASES]
-complete_cases = data[data.delegation_na == False]
+# only keep complete outcome cases we can use any of the sum_na columns for this
+complete_y_cases = data[data.delegation_na == False]
+
+# complete cases relative to actual documents 'content' isolate y and x 
+model_df = complete_y_cases[['content', 'precision_high', 'obligation_high', 'delegation_high']]
+
+
 # Cleaning documents
 #probably a way to string this together better
 ##get rid of special characters and "accidental" punctuation
 bad_characters = list("?!~﻿\/_-'[]»")
 
 for punctuation in bad_characters:
-    complete_cases['content']  = complete_cases['content'].str.replace(punctuation, "")
+    model_df['content']  = model_df['content'].str.replace(punctuation, "")
 
 #get rid of multiple periods without getting rid of single periods helpful for 
 #denoting sentences
-complete_cases['content']= complete_cases['content'].str.replace(r"\.{2,}", "")
+model_df['content']= model_df['content'].str.replace(r"\.{2,}", "")
 
 #Do we need to get rid of things like (a) as a list tool?
-complete_cases['content']= complete_cases['content'].str.replace(r"\(\w\)", "")
+model_df['content']= model_df['content'].str.replace(r"\(\w\)", "")
 
 #Getting rid of extra whitespace
-complete_cases['content']= complete_cases['content'].str.replace(r" +", " ")
+model_df['content']= model_df['content'].str.replace(r" +", " ")
 
 # you need to convert to lower case 
-complete_cases['content'] = complete_cases['content'].str.lower() 
+model_df['content'] = model_df['content'].str.lower() 
 
-complete_cases['content'] = complete_cases['content'].str.replace(r"\d+", "")
+model_df['content'] = model_df['content'].str.replace(r"\d+", "")
 
-# isolate the documents convert to list 
-clean_documents  = complete_cases['content'].to_list()
+# isolate the documents convert to list and Y outcomes 
+# First replace empty documents to nan 
+model_df['content'] = model_df['content'].replace('', np.nan)
 
-# remove empty entries for now, are they supposed to be missing? 
+# listwise delete model_df 
+model_df = model_df.dropna().reset_index()
+
+clean_documents  = model_df['content'].to_list()
+
+# remove empty entries for now, are they supposed to be missing? (not needed after clean up)
 clean_documents = [i for i in clean_documents if i] 
 
 # remove stop words
@@ -241,3 +259,75 @@ corpus_top_mean_feats(X=X_matrix, features=features, grp_ids=None, min_tfidf=0.1
 # precision, obligation, delegation [high or low][0,1]
 # 1 decision with more cats (all 3) 
 # This document has more indicators for precision versus some other things  
+df_outcomes = model_df.drop(['index', 'content'], axis = 1)
+
+# look at the coverage across individual categories 
+counts = []
+cats = list(df_outcomes.columns.values)
+for i in cats:
+    counts.append((i, df_outcomes[i].sum()))
+
+df_summary = pd.DataFrame(counts, columns=['outcome', 'number of documents'])
+df_summary
+
+# look at the multi-label
+rowsums = df_outcomes.iloc[:,0:].sum(axis=1)
+x=rowsums.value_counts()
+x
+
+# 0    210
+# 1    128
+# 2     87
+# 3     42
+
+# split train and test (WIP until we have all the possible text)
+x_train, x_test, y_train, y_test = train_test_split(doc_stop_rm, df_outcomes, test_size=0.2, random_state=40)
+
+# we can use our existing tfidf pipeline but incorporate out classifiers 
+model_feat = Pipeline([('vect', CountVectorizer(ngram_range=(1, 2), analyzer='word')),
+    ('tfidf', TfidfTransformer(use_idf= True))
+    ])
+
+# let's try naive bayes 
+model = Pipeline( steps = [ ('feat_pipeline', model_feat),
+                            ('clf', OneVsRestClassifier(MultinomialNB(fit_prior=True, class_prior=None))) 
+                                  ])
+
+for category in cats:
+    print('... Processing {}'.format(category))
+    # train the model using X_dtm & y
+    model.fit(x_train, y_train[category])
+    # compute the testing accuracy
+    prediction = model.predict(x_test)
+    print('Test accuracy is {}'.format(accuracy_score(y_test[category], prediction)))
+
+# logistic regression
+model = Pipeline( steps = [ ('feat_pipeline', model_feat),
+                            ('clf',  OneVsRestClassifier(LogisticRegression(solver='sag'), n_jobs=1)) 
+                                  ])
+
+for category in cats:
+    print('... Processing {}'.format(category))
+    # train the model using X_dtm & y
+    model.fit(x_train, y_train[category])
+    # compute the testing accuracy
+    prediction = model.predict(x_test)
+    print('Test accuracy is {}'.format(accuracy_score(y_test[category], prediction)))
+
+# SVC
+model = Pipeline( steps = [ ('feat_pipeline', model_feat),
+                            ('clf',  OneVsRestClassifier(LinearSVC(), n_jobs=1)) 
+                                  ])
+
+for category in cats:
+    print('... Processing {}'.format(category))
+    # train the model using X_dtm & y
+    model.fit(x_train, y_train[category])
+    # compute the testing accuracy
+    prediction = model.predict(x_test)
+    print('Test accuracy is {}'.format(accuracy_score(y_test[category], prediction)))
+
+# SVC seems to be doing the best.
+# Next steps:
+# 1. Parameter tuning 
+# 2. Inspect classifications 
