@@ -23,6 +23,26 @@ data['content'].dtypes # check data type
 data['content'] = data['content'].astype(str) # convert to string 
 data.columns
 
+# Clean up Y
+data.replace('N/a', np.nan, inplace=True)
+
+# Replace typos with proper values by creating dict and passing to df.replace()
+replace = {
+    'precision 1 (Y/N)': {'n':'N', 'y':'Y'},
+    'precision 4 (Y/N)': {'17':'Y', 'Y?':'Y', 'y':'Y', 'n':'N'},
+
+    'obligation 1 (Y/N)': {'Y?':'Y', 'n':'N', 'y':'Y'},
+    'obligation 2 (Y/N)': {'y':'Y'},
+    'obligation 3 (Y/N)': {'Y?':'Y', 'y':'Y', 'N?':'N'},
+    'obligation 5 (Y/N)': {'M':'N', 'Y?':'Y', 'y':'Y', 'n':'N'},
+    
+    'delegation 1 (Y/N)': {'M':'N', 'n':'N', 'y':'Y'}, 
+    'delegation 2 (Y/N)': {'n':'N', 'y':'Y'}, 
+    'delegation 3 (Y/N)': {'n':'N', 'y':'Y'}
+}
+
+data.replace(replace, inplace=True)
+
 # create outcome
 # y = [precision_high, obligation_high, delegation_high]
 # We have a scale to work with here:
@@ -50,36 +70,96 @@ precision = ['precision 1 (Y/N)', 'precision 4 (Y/N)']
 obligation = ['obligation 1 (Y/N)', 'obligation 2 (Y/N)', 'obligation 3 (Y/N)', 'obligation 5 (Y/N)']
 delegation = ['delegation 1 (Y/N)', 'delegation 2 (Y/N)', 'delegation 3 (Y/N)']
 
-# create dummies and concat back to main df
-precision_dummies = pd.get_dummies(data[delegation])
+# Create dummies and concat back to main df
+# We can choose to drop the first by setting 'drop_first=True'
+# Another minor issue the 'nan' values are their own column and they are given a '0' in the 'Y' and 'N' columns totally not correct 
+# We will fix after combining back thinking we can loop over the columns and replace using the nan column indicator
+# See issue here: 
+precision_dummies = pd.get_dummies(data[precision], dummy_na=True) 
+obligation_dummies = pd.get_dummies(data[obligation],dummy_na=True)
+delegation_dummies = pd.get_dummies(data[delegation],dummy_na=True)
 
-# create Precision dummies
+data = pd.concat([data, precision_dummies, obligation_dummies, delegation_dummies], axis=1)
 
-#cleaning data
+# Normalize scaled columns 'precision 2 (1-4)' and 'obligation 4 (1-5)'
+data['precision_2_norm'] = data['precision 2 (1-4)'].astype(float).div(4)
+data['obligation_4_norm'] = data['obligation 4 (1-5)'].astype(float).div(5)
+
+# create 1,0 using >= .50 as cutoff and take care of nan values 
+data['precision_2_dummy'] = np.where(data['precision_2_norm'] >= 0.50, 1, 0)
+data['precision_2_dummy'].mask(data['precision_2_norm'].isna(), np.nan, inplace=True)
+
+data['obligation_4_dummy'] = np.where(data['obligation_4_norm'] >= 0.50, 1, 0)
+data['obligation_4_dummy'].mask(data['obligation_4_norm'].isna(), np.nan, inplace=True)
+
+# mask '0' values that should be nan in the other dummy variables
+dummies = ['precision 1 (Y/N)_Y', 'precision 4 (Y/N)_Y', 'obligation 1 (Y/N)_Y', 
+    'obligation 2 (Y/N)_Y', 'obligation 3 (Y/N)_Y', 'obligation 5 (Y/N)_Y',
+    'delegation 1 (Y/N)_Y', 'delegation 2 (Y/N)_Y', 'delegation 3 (Y/N)_Y']
+
+nan_values = ['precision 1 (Y/N)_nan', 'precision 4 (Y/N)_nan', 'obligation 1 (Y/N)_nan', 
+    'obligation 2 (Y/N)_nan', 'obligation 3 (Y/N)_nan', 'obligation 5 (Y/N)_nan',
+    'delegation 1 (Y/N)_nan', 'delegation 2 (Y/N)_nan', 'delegation 3 (Y/N)_nan']
+
+# this maps the nan values using the column created by 'get_dummies'...R is so much better with this stuff honestly
+for nan_column, dummy_columm in zip(nan_values, dummies):
+    data.loc[data[nan_column] == 1, [dummy_columm]] = np.nan
+
+# Finally, create the Y composite by adding the values and creating the cut-offs
+precision_cols = ['precision 1 (Y/N)_Y', 'precision_2_dummy', 'precision 4 (Y/N)_Y']
+obligation_cols = ['obligation 1 (Y/N)_Y', 'obligation 2 (Y/N)_Y','obligation 3 (Y/N)_Y', 'obligation_4_dummy', 'obligation 5 (Y/N)_Y']
+delegation_cols =  ['delegation 1 (Y/N)_Y', 'delegation 2 (Y/N)_Y', 'delegation 3 (Y/N)_Y']
+
+data['precision_sum'] =  data.loc[:, precision_cols].sum(axis=1)
+
+data['obligation_sum'] = data.loc[:, obligation_cols].sum(axis=1)
+
+data['delegation_sum'] = data.loc[:, delegation_cols].sum(axis=1)
+
+# same issue as before we want to combine even if some have nan values but not if all are nan
+# this creates 0 for all nan instances 
+# we can fix by creating an indicator for when all are missing and use the previous method to mask these
+data['precision_na'] = data[precision_cols].isnull().apply(lambda x: all(x), axis=1) 
+data.loc[data['precision_na'] == True, ['precision_sum']] = np.nan
+
+data['obligation_na'] = data[obligation_cols].isnull().apply(lambda x: all(x), axis=1) 
+data.loc[data['obligation_na'] == True, ['obligation_sum']] = np.nan
+
+data['delegation_na'] = data[delegation_cols].isnull().apply(lambda x: all(x), axis=1) 
+data.loc[data['delegation_na'] == True, ['delegation_sum']] = np.nan
+
+# last bit for cutoff 
+data['precision_high'] = np.where(data['precision_sum'] >= 3, 1, 0)
+data['obligation_high'] = np.where(data['obligation_sum'] >= 3, 1, 0)
+data['delegation_high'] = np.where(data['delegation_sum'] >= 3, 1, 0)
+
+# only keep complete cases we can use any of the sum_na columns for this [WIP: GET THE DOCS AND Y AND THEN DO COMPLETE CASES]
+complete_cases = data[data.delegation_na == False]
+# Cleaning documents
 #probably a way to string this together better
 ##get rid of special characters and "accidental" punctuation
 bad_characters = list("?!~﻿\/_-'[]»")
 
 for punctuation in bad_characters:
-    data['content']  = data['content'].str.replace(punctuation, "")
+    complete_cases['content']  = complete_cases['content'].str.replace(punctuation, "")
 
 #get rid of multiple periods without getting rid of single periods helpful for 
 #denoting sentences
-data['content']= data['content'].str.replace(r"\.{2,}", "")
+complete_cases['content']= complete_cases['content'].str.replace(r"\.{2,}", "")
 
 #Do we need to get rid of things like (a) as a list tool?
-data['content']= data['content'].str.replace(r"\(\w\)", "")
+complete_cases['content']= complete_cases['content'].str.replace(r"\(\w\)", "")
 
 #Getting rid of extra whitespace
-data['content']= data['content'].str.replace(r" +", " ")
+complete_cases['content']= complete_cases['content'].str.replace(r" +", " ")
 
 # you need to convert to lower case 
-data['content'] = data['content'].str.lower() 
+complete_cases['content'] = complete_cases['content'].str.lower() 
 
-data['content'] = data['content'].str.replace(r"\d+", "")
+complete_cases['content'] = complete_cases['content'].str.replace(r"\d+", "")
 
 # isolate the documents convert to list 
-clean_documents  = data['content'].to_list()
+clean_documents  = complete_cases['content'].to_list()
 
 # remove empty entries for now, are they supposed to be missing? 
 clean_documents = [i for i in clean_documents if i] 
