@@ -17,6 +17,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.naive_bayes import MultinomialNB
@@ -71,6 +72,7 @@ data.replace(replace, inplace=True)
 # 2. 'delegation 2 (Y/N)' we need to convert to (0,1)
 # 3. 'delegation 3 (Y/N)' we need t0 convert to (0,1)
 # 'delegation_high = sum of all the delegation measure >= 3
+# OTHER NOTES: There's a page count feature
 
 # isolate labels
 precision = ['precision 1 (Y/N)', 'precision 4 (Y/N)']
@@ -180,7 +182,7 @@ model_df = model_df.dropna().reset_index()
 clean_documents  = model_df['content'].to_list()
 
 # remove empty entries for now, are they supposed to be missing? (not needed after clean up)
-clean_documents = [i for i in clean_documents if i] 
+clean_documents = [i for i in clean_documents if i] # don't really need this now 
 
 # remove stop words
 doc_stop_rm = [0]* len(clean_documents)
@@ -300,6 +302,8 @@ for category in cats:
     # compute the testing accuracy
     prediction = model.predict(x_test)
     print('Test accuracy is {}'.format(accuracy_score(y_test[category], prediction)))
+    print(classification_report(y_test[category], prediction))
+    print(confusion_matrix(y_test[category], prediction))
 
 # logistic regression
 model = Pipeline( steps = [ ('feat_pipeline', model_feat),
@@ -313,6 +317,8 @@ for category in cats:
     # compute the testing accuracy
     prediction = model.predict(x_test)
     print('Test accuracy is {}'.format(accuracy_score(y_test[category], prediction)))
+    print(classification_report(y_test[category], prediction))
+    print(confusion_matrix(y_test[category], prediction))
 
 # SVC
 model = Pipeline( steps = [ ('feat_pipeline', model_feat),
@@ -326,8 +332,10 @@ for category in cats:
     # compute the testing accuracy
     prediction = model.predict(x_test)
     print('Test accuracy is {}'.format(accuracy_score(y_test[category], prediction)))
+    print(classification_report(y_test[category], prediction))
+    print(confusion_matrix(y_test[category], prediction))
 
 # SVC seems to be doing the best.
 # Next steps:
 # 1. Parameter tuning 
-# 2. Inspect classifications (this will be tricky for the multi label case) 
+# 2. Inspect classifications (this will be tricky for the multi label case)
