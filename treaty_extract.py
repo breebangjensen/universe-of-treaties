@@ -20,7 +20,7 @@ import time
 def convert_to_txt_pypdf(pdf_file):
     pdf_reader = PyPDF2.PdfFileReader(pdf_file)
     txt_file = os.path.splitext(pdf_file)[0] +'.txt'
-    with open (txt_file,'w', encoding="utf-8") as pdf_output:
+    with open (txt_file,'w', encoding('ascii', 'ignore')) as pdf_output:
         for page in range(pdf_reader.getNumPages()):
             data = pdf_reader.getPage(page).extractText()
             pdf_output.write(data)
