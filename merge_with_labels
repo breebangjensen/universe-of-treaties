@@ -92,7 +92,7 @@ print(labeled_treaties["treaty_number2"])
 treaty_tags = pd.DataFrame(treaty_tags)
 labeled_treaties= pd.DataFrame(labeled_treaties)
 ##left join
-final_labels=labeled_treaties.merge(right=treaty_tags, how="left", left_on="treaty_number2", right_on="treaty_number")
+final_labels=labeled_treaties.merge(right=treaty_tags, how="left", left_on="treaty_number2", right_on="treatynumber")
 final_labels= pd.DataFrame(final_labels)
 final_labels.to_csv("final_labels.csv")
 #check
