@@ -69,6 +69,6 @@ for name in catalogs:
         ## pdf path
         towrite['pdf'] = soup.find("a", {"id": "0"})["href"]
         _ = csv_writer.writerow(towrite.values())
-        time.sleep(2)
+        time.sleep(5)
 
 out_csv_file.close()
